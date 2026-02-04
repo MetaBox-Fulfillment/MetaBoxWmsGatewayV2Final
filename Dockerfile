@@ -10,23 +10,29 @@ RUN composer install \
     --prefer-dist
 
 # 2. SZAKASZ: A végleges futtató környezet
-# Egy könnyű, Nginx-szel előre konfigurált PHP image-et használunk
 FROM serversideup/php:8.2-fpm-nginx
 WORKDIR /var/www/html
 
-# Szükséges PHP kiterjesztések telepítése (ha a Laravelnek kell extra)
-# Az alpine alapú image-eknél ez villámgyors
+# Szükséges PHP kiterjesztések telepítése Postgres-hez
 USER root
-RUN apt-get update && apt-get install -y libsqlite3-dev && docker-php-ext-install pdo_mysql
+RUN apt-get update && apt-get install -y libpq-dev \
+    && docker-php-ext-install pdo_pgsql \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Másoljuk át a vendor-t az első szakaszból
+# Másoljuk át a vendor-t
 COPY --from=vendor /app/vendor ./vendor
 
 # Másoljuk át a kódunkat
 COPY . .
 
+# Migrációs script létrehozása, ami indításkor lefut
+RUN echo "#!/bin/sh\n\
+echo 'Running migrations...'\n\
+php artisan migrate --force\n\
+" > /etc/entrypoint.d/99-migrate.sh && chmod +x /etc/entrypoint.d/99-migrate.sh
+
 # Laravel jogosultságok beállítása
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-# Alapértelmezett környezeti változók (a .env felülírja ezeket)
+# Alapértelmezett környezeti változók
 ENV PHP_OPCACHE_ENABLE=1
