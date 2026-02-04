@@ -28,6 +28,7 @@ return [
             'http://127.0.0.1:5174',
             'http://127.0.0.1:5175',
             'https://dev-portal.metabox.hu',
+            'http://b8k4804og8c4kgsk8ssww0kg.188.245.180.83.sslip.io',
 
         ],
 
